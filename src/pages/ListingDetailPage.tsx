@@ -223,7 +223,7 @@ export default function ListingDetailPage() {
       <div className="fixed bottom-16 inset-x-0 bg-white border-t border-gray-100 px-4 py-3 z-20">
         {isOwner ? (
           <button
-            onClick={() => navigate('/chat')}
+            onClick={() => navigate(`/listing/${listing.id}/applicants`)}
             className="w-full py-3 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-colors"
           >
             ניהול מועמדים

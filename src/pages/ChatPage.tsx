@@ -1,3 +1,8 @@
+import { useParams } from 'react-router-dom'
+import { ConversationList } from '../components/chat/ConversationList'
+import { ChatThread } from '../components/chat/ChatThread'
+
 export default function ChatPage() {
-  return <div className="p-4 text-gray-500">Chat — coming soon</div>
+  const { id } = useParams<{ id?: string }>()
+  return id ? <ChatThread conversationId={id} /> : <ConversationList />
 }

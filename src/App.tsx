@@ -8,6 +8,7 @@ import ChatPage from './pages/ChatPage'
 import ListingDetailPage from './pages/ListingDetailPage'
 import CreateListingPage from './pages/CreateListingPage'
 import ProfilePage from './pages/ProfilePage'
+import ApplicantsPage from './pages/ApplicantsPage'
 import AuthPage from './pages/AuthPage'
 
 export default function App() {
@@ -28,6 +29,7 @@ export default function App() {
               {/* /listing/new must precede /listing/:id */}
               <Route path="/listing/new" element={<CreateListingPage />} />
               <Route path="/listing/:id" element={<ListingDetailPage />} />
+              <Route path="/listing/:id/applicants" element={<ApplicantsPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route
                 path="/marketplace"

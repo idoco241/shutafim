@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useListings } from '../hooks/useListings'
 import { ListingList } from '../components/rooms/ListingList'
+import { MapView } from '../components/rooms/MapView'
 import { FilterPanel } from '../components/rooms/FilterPanel'
 import { FilterPills } from '../components/rooms/FilterPills'
 
@@ -11,18 +12,19 @@ export default function RoomsPage() {
   const navigate = useNavigate()
   const [view, setView] = useState<View>('list')
   const [showFilters, setShowFilters] = useState(false)
-  const { listings, loading, error, filters, setFilters, clearFilter } = useListings()
+  const { listings, allListings, loading, error, filters, setFilters, clearFilter } = useListings()
 
   const activeFilterCount = Object.entries(filters).filter(([k, v]) =>
     k === 'matchMyProfile' ? v === true : v !== null
   ).length
+
+  const filtersActive = activeFilterCount > 0
 
   return (
     <div className="flex flex-col h-[calc(100dvh-3.5rem-4rem)]">
       {/* Filter bar */}
       <div className="bg-white border-b border-gray-100 px-4 py-2 shrink-0">
         <div className="flex items-center gap-2">
-          {/* Filter button */}
           <button
             onClick={() => setShowFilters(true)}
             className="flex items-center gap-1.5 text-sm font-medium text-gray-700 bg-gray-100 px-3 py-1.5 rounded-full shrink-0"
@@ -36,23 +38,21 @@ export default function RoomsPage() {
             )}
           </button>
 
-          {/* Active pills */}
           <div className="flex-1 overflow-x-auto min-w-0">
             <FilterPills filters={filters} onRemove={clearFilter} />
           </div>
 
-          {/* Map/List toggle */}
           <div className="flex gap-0.5 shrink-0 bg-gray-100 p-1 rounded-lg">
             <button
               onClick={() => setView('list')}
-              title="List view"
+              title="רשימה"
               className={`p-1.5 rounded-md transition-colors ${view === 'list' ? 'bg-white shadow-sm text-purple-700' : 'text-gray-400'}`}
             >
               <i className="ti ti-list text-sm" />
             </button>
             <button
               onClick={() => setView('map')}
-              title="Map view"
+              title="מפה"
               className={`p-1.5 rounded-md transition-colors ${view === 'map' ? 'bg-white shadow-sm text-purple-700' : 'text-gray-400'}`}
             >
               <i className="ti ti-map text-sm" />
@@ -61,15 +61,16 @@ export default function RoomsPage() {
         </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto">
+      {/* Content — no scroll for map so it fills height exactly */}
+      <div className={`flex-1 ${view === 'map' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
         {view === 'list' ? (
           <ListingList listings={listings} loading={loading} />
         ) : (
-          <div className="flex flex-col items-center justify-center h-full text-center px-8">
-            <i className="ti ti-map-2 text-5xl text-gray-300 mb-3" />
-            <p className="text-sm text-gray-500">תצוגת מפה — בקרוב</p>
-          </div>
+          <MapView
+            listings={listings}
+            allListings={allListings}
+            filtersActive={filtersActive}
+          />
         )}
       </div>
 
@@ -80,16 +81,17 @@ export default function RoomsPage() {
         </div>
       )}
 
-      {/* Add listing FAB */}
-      <button
-        onClick={() => navigate('/listing/new')}
-        className="fixed bottom-20 right-4 w-12 h-12 rounded-full bg-purple-700 text-white shadow-lg flex items-center justify-center hover:bg-purple-800 active:scale-95 transition-all z-30"
-        title="Add listing"
-      >
-        <i className="ti ti-plus text-xl" />
-      </button>
+      {/* Add listing FAB — hidden in map view to avoid overlap with locate button */}
+      {view === 'list' && (
+        <button
+          onClick={() => navigate('/listing/new')}
+          className="fixed bottom-20 right-4 w-12 h-12 rounded-full bg-purple-700 text-white shadow-lg flex items-center justify-center hover:bg-purple-800 active:scale-95 transition-all z-30"
+          title="מודעה חדשה"
+        >
+          <i className="ti ti-plus text-xl" />
+        </button>
+      )}
 
-      {/* Filter panel */}
       {showFilters && (
         <FilterPanel
           filters={filters}
