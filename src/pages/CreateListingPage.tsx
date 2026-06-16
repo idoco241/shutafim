@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useDropzone } from 'react-dropzone'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
-import { NEIGHBORHOODS, uploadListingImages } from '../lib/listings'
+import { uploadListingImages } from '../lib/listings'
 import type { ListingType } from '../types'
 
 const MAPTILER_KEY = import.meta.env.VITE_MAPTILER_KEY as string
@@ -12,6 +12,16 @@ const MAX_IMAGES = 5
 interface GeoResult {
   place_name: string
   center: [number, number] // [lng, lat]
+  neighborhood: string     // auto-detected from context, '' if unknown
+}
+
+function detectNeighborhood(context: Array<{ id: string; text: string }> = []): string {
+  const text = context.find(c => c.id.startsWith('neighborhood'))?.text ?? ''
+  if (text.includes('שכונה ב')) return 'שכונה ב׳'
+  if (text.includes('שכונה ג')) return 'שכונה ג׳'
+  if (text.includes('שכונה ד')) return 'שכונה ד׳'
+  if (text) return 'אחר'
+  return ''
 }
 
 interface FormState {
@@ -129,9 +139,10 @@ export default function CreateListingPage() {
           `https://api.maptiler.com/geocoding/${encodeURIComponent(value)}.json?key=${MAPTILER_KEY}&language=he&country=il&proximity=34.7913,31.2518&bbox=34.55,31.00,35.05,31.50`
         )
         const json = await res.json()
-        setGeoResults((json.features ?? []).slice(0, 5).map((f: { place_name: string; center: [number, number] }) => ({
+        setGeoResults((json.features ?? []).slice(0, 5).map((f: { place_name: string; center: [number, number]; context?: Array<{ id: string; text: string }> }) => ({
           place_name: f.place_name,
           center: f.center,
+          neighborhood: detectNeighborhood(f.context),
         })))
       } catch {
         setGeoResults([])
@@ -142,7 +153,7 @@ export default function CreateListingPage() {
   }
 
   const selectGeoResult = (r: GeoResult) => {
-    setForm(f => ({ ...f, address: r.place_name, lat: r.center[1], lng: r.center[0] }))
+    setForm(f => ({ ...f, address: r.place_name, lat: r.center[1], lng: r.center[0], neighborhood: r.neighborhood }))
     setGeoResults([])
     setErrors(e => ({ ...e, address: undefined, lat: undefined }))
   }
@@ -362,17 +373,12 @@ export default function CreateListingPage() {
           </div>
         </div>
 
-        {/* Neighborhood */}
+        {/* Neighborhood — auto-detected from address */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">שכונה / עיר</label>
-          <select
-            value={form.neighborhood}
-            onChange={e => set('neighborhood', e.target.value)}
-            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
-          >
-            <option value="">בחר...</option>
-            {NEIGHBORHOODS.map(n => <option key={n} value={n}>{n}</option>)}
-          </select>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">שכונה</label>
+          <div className="px-3 py-2.5 border border-gray-100 rounded-xl bg-gray-50 text-sm text-gray-400 select-none">
+            {form.neighborhood || 'תיקבע אוטומטית לפי הכתובת'}
+          </div>
         </div>
 
         {/* Dates */}
