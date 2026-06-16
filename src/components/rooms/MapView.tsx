@@ -4,7 +4,7 @@ import type { Listing } from '../../types'
 import { formatHebrewDate, CITY_CENTER } from '../../lib/listings'
 
 const MAPTILER_KEY = import.meta.env.VITE_MAPTILER_KEY as string
-const INIT_ZOOM = 15
+const INIT_ZOOM = 14
 
 interface Props {
   listings: Listing[]      // currently filtered (shown as active/purple)
