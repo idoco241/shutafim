@@ -1,6 +1,22 @@
 import type { Listing } from '../../types'
 import { ListingCard } from './ListingCard'
 
+function SkeletonCard() {
+  return (
+    <div className="bg-white rounded-2xl overflow-hidden shadow-sm animate-pulse">
+      <div className="aspect-video bg-gray-200" />
+      <div className="p-3 space-y-2">
+        <div className="h-5 bg-gray-200 rounded-lg w-1/3" />
+        <div className="h-4 bg-gray-200 rounded-lg w-2/3" />
+        <div className="flex gap-2 pt-1">
+          <div className="h-5 bg-gray-200 rounded-full w-16" />
+          <div className="h-5 bg-gray-200 rounded-full w-20" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 interface Props {
   listings: Listing[]
   loading: boolean
@@ -9,8 +25,8 @@ interface Props {
 export function ListingList({ listings, loading }: Props) {
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-48">
-        <div className="w-6 h-6 rounded-full border-2 border-purple-700 border-t-transparent animate-spin" />
+      <div className="grid grid-cols-1 gap-3 p-4">
+        {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
       </div>
     )
   }
