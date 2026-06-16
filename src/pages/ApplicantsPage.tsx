@@ -134,6 +134,13 @@ export default function ApplicantsPage() {
           <p className="text-sm font-semibold text-gray-900">מועמדים</p>
           {address && <p className="text-xs text-gray-500 truncate">{address}</p>}
         </div>
+        <button
+          onClick={() => navigate(`/listing/${listingId}/group`)}
+          title="שידור קבוצתי"
+          className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+        >
+          <i className="ti ti-broadcast text-lg" />
+        </button>
       </div>
 
       {loading ? (

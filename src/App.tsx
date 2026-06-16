@@ -9,6 +9,7 @@ import ListingDetailPage from './pages/ListingDetailPage'
 import CreateListingPage from './pages/CreateListingPage'
 import ProfilePage from './pages/ProfilePage'
 import ApplicantsPage from './pages/ApplicantsPage'
+import GroupBroadcastPage from './pages/GroupBroadcastPage'
 import AuthPage from './pages/AuthPage'
 
 export default function App() {
@@ -30,6 +31,7 @@ export default function App() {
               <Route path="/listing/new" element={<CreateListingPage />} />
               <Route path="/listing/:id" element={<ListingDetailPage />} />
               <Route path="/listing/:id/applicants" element={<ApplicantsPage />} />
+              <Route path="/listing/:id/group" element={<GroupBroadcastPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route
                 path="/marketplace"

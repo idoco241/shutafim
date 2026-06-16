@@ -222,12 +222,39 @@ export default function ListingDetailPage() {
       {/* Fixed CTA */}
       <div className="fixed bottom-16 inset-x-0 bg-white border-t border-gray-100 px-4 py-3 z-20">
         {isOwner ? (
-          <button
-            onClick={() => navigate(`/listing/${listing.id}/applicants`)}
-            className="w-full py-3 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-colors"
-          >
-            ניהול מועמדים
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => navigate(`/listing/${listing.id}/applicants`)}
+              className="flex-1 py-3 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-colors"
+            >
+              ניהול מועמדים
+            </button>
+            <button
+              onClick={() => navigate(`/listing/${listing.id}/group`)}
+              title="שידור קבוצתי"
+              className="w-12 py-3 border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 flex items-center justify-center"
+            >
+              <i className="ti ti-broadcast text-lg" />
+            </button>
+          </div>
+        ) : existingApp?.status === 'accepted' ? (
+          <div className="flex gap-2">
+            <button
+              onClick={() =>
+                existingApp.conversation_id && navigate(`/chat/${existingApp.conversation_id}`)
+              }
+              className="flex-1 py-3 border border-purple-700 text-purple-700 text-sm font-medium rounded-xl"
+            >
+              פתח שיחה
+            </button>
+            <button
+              onClick={() => navigate(`/listing/${listing.id}/group`)}
+              className="flex-1 py-3 bg-purple-700 text-white text-sm font-medium rounded-xl hover:bg-purple-800 transition-colors"
+            >
+              <i className="ti ti-broadcast text-sm ml-1.5" />
+              שידור קבוצתי
+            </button>
+          </div>
         ) : existingApp ? (
           <button
             onClick={() =>
