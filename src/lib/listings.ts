@@ -14,27 +14,18 @@ export const uploadListingImages = async (files: File[], listingId: string): Pro
   return urls
 }
 
-// Beer Sheva city focus
-export const CITY_CENTER: [number, number] = [34.7913, 31.2518] // [lng, lat]
+// Beer Sheva — centered on שכונות ב׳/ג׳/ד׳ (student neighborhoods near BGU)
+export const CITY_CENTER: [number, number] = [34.797, 31.257] // [lng, lat]
 export const CITY_BOUNDS = {
   lat: { min: 31.00, max: 31.50 },
   lng: { min: 34.55, max: 35.05 },
 }
 
 export const NEIGHBORHOODS = [
-  'נווה זאב',
-  'שכונה ד׳',
+  'שכונה ב׳',
   'שכונה ג׳',
-  'מרכז העיר',
-  'גבעת המוסיאון',
-  'רמות',
-  'נאות לון',
-  'רמת בגין',
-  'פארק הנגב',
-  'נחל בקע',
-  'עומר',
-  'להבים',
-  'תל שבע',
+  'שכונה ד׳',
+  'אחר',
 ]
 
 export const fetchListings = async (): Promise<Listing[]> => {
