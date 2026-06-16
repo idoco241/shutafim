@@ -44,19 +44,24 @@ export default function ApplicantsPage() {
   const { user } = useAuth()
 
   const [address, setAddress] = useState<string>('')
+  const [isActive, setIsActive] = useState(true)
   const [apps, setApps] = useState<AppRow[]>([])
   const [loading, setLoading] = useState(true)
   const [notAllowed, setNotAllowed] = useState(false)
-  const [actionLoading, setActionLoading] = useState<string | null>(null) // app id in flight
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
+
+  // Close listing state
+  const [confirmClose, setConfirmClose] = useState(false)
+  const [closing, setClosing] = useState(false)
+  const [closeError, setCloseError] = useState('')
 
   useEffect(() => {
     if (!listingId || !user) return
 
     const load = async () => {
-      // Verify ownership
       const { data: listing } = await supabase
         .from('listings')
-        .select('id, address, owner_id')
+        .select('id, address, owner_id, is_active')
         .eq('id', listingId)
         .single()
 
@@ -67,6 +72,7 @@ export default function ApplicantsPage() {
       }
 
       setAddress(listing.address)
+      setIsActive(listing.is_active)
 
       const { data } = await supabase
         .from('applications')
@@ -84,8 +90,6 @@ export default function ApplicantsPage() {
   const updateStatus = async (app: AppRow, newStatus: 'accepted' | 'rejected') => {
     if (actionLoading) return
     setActionLoading(app.id)
-
-    // Optimistic update
     setApps(prev => prev.map(a => a.id === app.id ? { ...a, status: newStatus } : a))
 
     const { error } = await supabase
@@ -94,20 +98,70 @@ export default function ApplicantsPage() {
       .eq('id', app.id)
 
     if (error) {
-      // Rollback
       setApps(prev => prev.map(a => a.id === app.id ? { ...a, status: app.status } : a))
       setActionLoading(null)
       return
     }
 
-    // Notify applicant
     await supabase.from('notifications').insert({
       user_id: app.applicant_id,
-      type: newStatus, // 'accepted' | 'rejected'
+      type: newStatus,
       payload: { listing_id: listingId },
     })
 
     setActionLoading(null)
+  }
+
+  const handleCloseListing = async () => {
+    if (!listingId || closing) return
+    setClosing(true)
+    setCloseError('')
+
+    // Step 1 — deactivate listing
+    const { error: listingErr } = await supabase
+      .from('listings')
+      .update({ is_active: false })
+      .eq('id', listingId)
+
+    if (listingErr) {
+      setCloseError('שגיאה בסגירת המודעה, נסה שוב')
+      setClosing(false)
+      return
+    }
+
+    // Step 2 — deny all pending applications
+    const pendingIds = apps.filter(a => a.status === 'pending').map(a => a.applicant_id)
+
+    const { error: appsErr } = await supabase
+      .from('applications')
+      .update({ status: 'denied_closed' })
+      .eq('listing_id', listingId)
+      .eq('status', 'pending')
+
+    if (appsErr) {
+      // Rollback listing deactivation
+      await supabase.from('listings').update({ is_active: true }).eq('id', listingId)
+      setCloseError('שגיאה בעדכון הפניות, המודעה לא נסגרה')
+      setClosing(false)
+      return
+    }
+
+    // Step 3 — notify denied applicants (best-effort, no rollback)
+    if (pendingIds.length > 0) {
+      await supabase.from('notifications').insert(
+        pendingIds.map(uid => ({
+          user_id: uid,
+          type: 'listing_closed',
+          payload: { listing_id: listingId },
+        }))
+      )
+    }
+
+    // Update local state
+    setIsActive(false)
+    setApps(prev => prev.map(a => a.status === 'pending' ? { ...a, status: 'denied_closed' } : a))
+    setConfirmClose(false)
+    setClosing(false)
   }
 
   if (notAllowed) {
@@ -124,14 +178,21 @@ export default function ApplicantsPage() {
   const acceptedCount = apps.filter(a => a.status === 'accepted').length
 
   return (
-    <div className="pb-8">
+    <div className="pb-28">
       {/* Header */}
       <div className="flex items-center px-4 py-3 border-b border-gray-100 bg-white sticky top-0 z-10">
         <button onClick={() => navigate(-1)} className="p-1 -ml-1 mr-2">
           <i className="ti ti-arrow-left text-xl text-gray-700" />
         </button>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-gray-900">מועמדים</p>
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-semibold text-gray-900">מועמדים</p>
+            {!isActive && (
+              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-gray-200 text-gray-500">
+                מודעה סגורה
+              </span>
+            )}
+          </div>
           {address && <p className="text-xs text-gray-500 truncate">{address}</p>}
         </div>
         <button
@@ -189,16 +250,14 @@ export default function ApplicantsPage() {
                         </span>
                       </div>
 
-                      {/* Profile snippet */}
                       <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-gray-500 mb-3">
                         {p?.field_of_study && <span>{p.field_of_study}</span>}
                         {p?.year_of_study && <span>שנה {p.year_of_study}</span>}
                         {p?.age && <span>גיל {p.age}</span>}
                       </div>
 
-                      {/* Actions */}
                       <div className="flex gap-2">
-                        {app.status === 'pending' && (
+                        {app.status === 'pending' && isActive && (
                           <>
                             <button
                               onClick={() => updateStatus(app, 'accepted')}
@@ -220,10 +279,10 @@ export default function ApplicantsPage() {
                         {app.conversation_id && (
                           <button
                             onClick={() => navigate(`/chat/${app.conversation_id}`)}
-                            className={`py-2 border border-purple-200 text-purple-700 text-sm font-medium rounded-xl active:scale-[0.98] transition-all ${app.status === 'pending' ? 'px-3' : 'flex-1'}`}
+                            className={`py-2 border border-purple-200 text-purple-700 text-sm font-medium rounded-xl active:scale-[0.98] transition-all ${(app.status === 'pending' && isActive) ? 'px-3' : 'flex-1'}`}
                           >
                             <i className="ti ti-message-2 text-sm" />
-                            {app.status !== 'pending' && <span className="mr-1.5">פתח שיחה</span>}
+                            {!(app.status === 'pending' && isActive) && <span className="mr-1.5">פתח שיחה</span>}
                           </button>
                         )}
                       </div>
@@ -232,6 +291,72 @@ export default function ApplicantsPage() {
                 </div>
               )
             })}
+          </div>
+        </>
+      )}
+
+      {/* Close listing CTA — fixed at bottom, only shown when listing is still active */}
+      {!loading && isActive && (
+        <div className="fixed bottom-16 inset-x-0 bg-white border-t border-gray-100 px-4 py-3 z-20">
+          <button
+            onClick={() => setConfirmClose(true)}
+            className="w-full py-3 border border-red-300 text-red-600 text-sm font-medium rounded-xl hover:bg-red-50 active:scale-[0.98] transition-all"
+          >
+            <i className="ti ti-lock text-sm ml-1.5" />
+            סגור מודעה
+          </button>
+        </div>
+      )}
+
+      {/* Confirmation bottom sheet */}
+      {confirmClose && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/40 z-50"
+            onClick={() => { if (!closing) setConfirmClose(false) }}
+          />
+          <div className="fixed bottom-0 inset-x-0 bg-white rounded-t-2xl z-50 p-5 pb-10">
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-50 mx-auto mb-3">
+              <i className="ti ti-lock text-2xl text-red-500" />
+            </div>
+            <h2 className="text-base font-semibold text-gray-900 text-center mb-1">סגירת מודעה</h2>
+            <p className="text-sm text-gray-500 text-center mb-1">
+              המודעה תוסר מהחיפוש ולא ניתן יהיה להגיש מועמדויות חדשות.
+            </p>
+            {pendingCount > 0 && (
+              <p className="text-sm text-amber-600 text-center mb-4">
+                {pendingCount} פנייה/ות ממתינות יקבלו הודעת דחייה.
+              </p>
+            )}
+            {!pendingCount && <div className="mb-4" />}
+
+            {closeError && (
+              <p className="text-sm text-red-500 text-center mb-3">{closeError}</p>
+            )}
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setConfirmClose(false); setCloseError('') }}
+                disabled={closing}
+                className="flex-1 py-3 border border-gray-200 text-gray-700 text-sm rounded-xl disabled:opacity-50"
+              >
+                ביטול
+              </button>
+              <button
+                onClick={handleCloseListing}
+                disabled={closing}
+                className="flex-1 py-3 bg-red-600 text-white text-sm font-medium rounded-xl disabled:opacity-50 active:scale-[0.98] transition-all"
+              >
+                {closing ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                    סוגר...
+                  </span>
+                ) : (
+                  'סגור מודעה'
+                )}
+              </button>
+            </div>
           </div>
         </>
       )}
