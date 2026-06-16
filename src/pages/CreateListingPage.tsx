@@ -126,7 +126,7 @@ export default function CreateListingPage() {
       setGeoLoading(true)
       try {
         const res = await fetch(
-          `https://api.maptiler.com/geocoding/${encodeURIComponent(value)}.json?key=${MAPTILER_KEY}&language=he&country=il`
+          `https://api.maptiler.com/geocoding/${encodeURIComponent(value)}.json?key=${MAPTILER_KEY}&language=he&country=il&proximity=34.7913,31.2518&bbox=34.55,31.00,35.05,31.50`
         )
         const json = await res.json()
         setGeoResults((json.features ?? []).slice(0, 5).map((f: { place_name: string; center: [number, number] }) => ({

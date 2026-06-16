@@ -10,7 +10,7 @@ type View = 'list' | 'map'
 
 export default function RoomsPage() {
   const navigate = useNavigate()
-  const [view, setView] = useState<View>('list')
+  const [view, setView] = useState<View>('map')
   const [showFilters, setShowFilters] = useState(false)
   const { listings, allListings, loading, error, filters, setFilters, clearFilter } = useListings()
 

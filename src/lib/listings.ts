@@ -14,20 +14,27 @@ export const uploadListingImages = async (files: File[], listingId: string): Pro
   return urls
 }
 
+// Beer Sheva city focus
+export const CITY_CENTER: [number, number] = [34.7913, 31.2518] // [lng, lat]
+export const CITY_BOUNDS = {
+  lat: { min: 31.00, max: 31.50 },
+  lng: { min: 34.55, max: 35.05 },
+}
+
 export const NEIGHBORHOODS = [
-  'רמת גן',
-  'פתח תקווה',
-  'בני ברק',
-  'גבעתיים',
-  'אור יהודה',
-  'קרית אונו',
-  'ראש העין',
-  'תל אביב יפו',
-  'חולון',
-  'בת ים',
-  'כפר סבא',
-  'הרצליה',
-  'רעננה',
+  'נווה זאב',
+  'שכונה ד׳',
+  'שכונה ג׳',
+  'מרכז העיר',
+  'גבעת המוסיאון',
+  'רמות',
+  'נאות לון',
+  'רמת בגין',
+  'פארק הנגב',
+  'נחל בקע',
+  'עומר',
+  'להבים',
+  'תל שבע',
 ]
 
 export const fetchListings = async (): Promise<Listing[]> => {
@@ -35,6 +42,10 @@ export const fetchListings = async (): Promise<Listing[]> => {
     .from('listings')
     .select('*')
     .eq('is_active', true)
+    .gte('lat', CITY_BOUNDS.lat.min)
+    .lte('lat', CITY_BOUNDS.lat.max)
+    .gte('lng', CITY_BOUNDS.lng.min)
+    .lte('lng', CITY_BOUNDS.lng.max)
     .order('created_at', { ascending: false })
 
   if (error) throw error

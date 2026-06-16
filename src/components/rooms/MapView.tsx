@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Listing } from '../../types'
-import { formatHebrewDate } from '../../lib/listings'
+import { formatHebrewDate, CITY_CENTER } from '../../lib/listings'
 
 const MAPTILER_KEY = import.meta.env.VITE_MAPTILER_KEY as string
-const IL_CENTER: [number, number] = [34.85, 31.95]
-const IL_ZOOM = 8
+const INIT_ZOOM = 13
 
 interface Props {
   listings: Listing[]      // currently filtered (shown as active/purple)
@@ -62,8 +61,8 @@ export function MapView({ listings, allListings, filtersActive }: Props) {
       const map = new sdk.Map({
         container: containerRef.current!,
         style: sdk.MapStyle.STREETS,
-        center: IL_CENTER,
-        zoom: IL_ZOOM,
+        center: CITY_CENTER,
+        zoom: INIT_ZOOM,
       })
 
       map.on('load', () => {
